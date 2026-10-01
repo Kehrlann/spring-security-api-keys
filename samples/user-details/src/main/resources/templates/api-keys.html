@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<title>Your API keys</title>
+	<style>
+		body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem; }
+		header { display: flex; justify-content: space-between; align-items: center; }
+		table { border-collapse: collapse; width: 100%; }
+		th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #ddd; }
+		code { background: #f4f4f4; padding: 0.1rem 0.3rem; }
+		.new-key { background: #e8f5e9; border: 1px solid #a5d6a7; padding: 1rem; margin: 1rem 0; }
+		.new-key code { display: block; margin-top: 0.5rem; word-break: break-all; }
+		form.inline { display: inline; }
+		fieldset { border: none; padding: 0; margin: 0.5rem 0; }
+	</style>
+</head>
+<body>
+<header>
+	<span>Signed in as <strong th:text="${username}">alice</strong></span>
+	<form class="inline" th:action="@{/logout}" method="post">
+		<button type="submit">Sign out</button>
+	</form>
+</header>
+
+<h1>Your API keys</h1>
+
+<div class="new-key" th:if="${newApiKey}">
+	Copy your new API key now, it will not be shown again:
+	<code id="new-api-key" th:text="${newApiKey}">key-id.secret</code>
+</div>
+
+<p th:if="${#lists.isEmpty(apiKeys)}">You have no API keys.</p>
+<table th:unless="${#lists.isEmpty(apiKeys)}">
+	<thead>
+	<tr>
+		<th>Name</th>
+		<th>Id</th>
+		<th>Roles</th>
+		<th>Created</th>
+		<th></th>
+	</tr>
+	</thead>
+	<tbody>
+	<tr th:each="apiKey : ${apiKeys}">
+		<td th:text="${apiKey.label}">CI</td>
+		<td><code th:text="${apiKey.id}">key-id</code></td>
+		<td th:text="${#strings.listJoin(apiKey.authorities.![authority], ', ')}">ROLE_USER</td>
+		<td th:text="${#temporals.format(apiKey.createdAt, 'yyyy-MM-dd HH:mm')}">2026-01-01 00:00</td>
+		<td>
+			<form class="inline" th:action="@{/api-keys/{id}/delete(id=${apiKey.id})}" method="post">
+				<button type="submit">Delete</button>
+			</form>
+		</td>
+	</tr>
+	</tbody>
+</table>
+
+<h2>Create an API key</h2>
+<form th:action="@{/api-keys}" method="post">
+	<label>Name <input name="label" required placeholder="CI pipeline"></label>
+	<fieldset>
+		<legend>Roles</legend>
+		<label th:each="role : ${roles}">
+			<input type="checkbox" name="roles" th:value="${role}" checked>
+			<span th:text="${role}">ROLE_USER</span>
+		</label>
+	</fieldset>
+	<button type="submit">Create</button>
+</form>
+
+<h2>Use it</h2>
+<pre><code>curl -H "X-API-Key: &lt;your key&gt;" http://localhost:8080/api/me</code></pre>
+</body>
+</html>
