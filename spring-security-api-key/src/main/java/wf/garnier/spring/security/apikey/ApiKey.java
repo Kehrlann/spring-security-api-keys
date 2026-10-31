@@ -29,7 +29,7 @@ import org.springframework.security.core.GrantedAuthority;
  *
  * @author Daniel Garnier-Moiroux
  */
-public interface ApiKeyDetails extends CredentialsContainer {
+public interface ApiKey extends CredentialsContainer {
 
 	String getId();
 

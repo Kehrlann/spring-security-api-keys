@@ -26,7 +26,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import wf.garnier.spring.security.apikey.ApiKeyDetails;
+import wf.garnier.spring.security.apikey.ApiKey;
 import wf.garnier.spring.security.apikey.GeneratedApiKey;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,8 +34,8 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 
 class InMemoryApiKeyRepositoryTests {
 
-	InMemoryApiKeyRepository<InMemoryApiKeyDetails> repository = new InMemoryApiKeyRepository<>(
-			InMemoryApiKeyDetails::new);
+	InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(
+			InMemoryApiKey::new);
 
 	@Test
 	void generatesSequentialIds() {
@@ -48,7 +48,7 @@ class InMemoryApiKeyRepositoryTests {
 		this.repository.addApiKey("api1", "secret", "seeded", List.of());
 		GeneratedApiKey key = this.repository.generate("a", List.of());
 		assertThat(key.id()).isEqualTo("api2");
-		InMemoryApiKeyDetails seeded = this.repository.findByKeyId("api1");
+		InMemoryApiKey seeded = this.repository.findByKeyId("api1");
 		assertThat(seeded).isNotNull();
 		assertThat(seeded.getPrincipalName()).isEqualTo("seeded");
 	}
@@ -72,7 +72,7 @@ class InMemoryApiKeyRepositoryTests {
 	@Test
 	void secretsAreStoredHashed() {
 		this.repository.addApiKey("a", "secret", "n", List.of());
-		InMemoryApiKeyDetails details = this.repository.findByKeyId("a");
+		InMemoryApiKey details = this.repository.findByKeyId("a");
 		assertThat(details).isNotNull();
 		assertThat(details.getSecret()).startsWith("{sha256}").doesNotContain("secret");
 	}
@@ -80,11 +80,11 @@ class InMemoryApiKeyRepositoryTests {
 	@Test
 	void findReturnsFreshInstances() {
 		this.repository.addApiKey("a", "secret", "n", List.of(new SimpleGrantedAuthority("X")));
-		InMemoryApiKeyDetails first = this.repository.findByKeyId("a");
+		InMemoryApiKey first = this.repository.findByKeyId("a");
 		assertThat(first).isNotNull();
 		first.eraseCredentials();
 		assertThat(first.getSecret()).isNull();
-		InMemoryApiKeyDetails second = this.repository.findByKeyId("a");
+		InMemoryApiKey second = this.repository.findByKeyId("a");
 		assertThat(second).isNotNull();
 		assertThat(second.getSecret()).isNotNull();
 		assertThat(second.getAuthorities()).extracting("authority").containsExactly("X");
@@ -111,13 +111,13 @@ class InMemoryApiKeyRepositoryTests {
 		this.repository.addApiKey("deleted", "secret", "deleted", List.of());
 		this.repository.delete("deleted");
 
-		List<InMemoryApiKeyDetails> keys = this.repository.listKeys();
+		List<InMemoryApiKey> keys = this.repository.listKeys();
 
-		assertThat(keys).extracting(InMemoryApiKeyDetails::getId).containsExactlyInAnyOrder("a", generated.id());
-		assertThat(keys).extracting(InMemoryApiKeyDetails::getPrincipalName)
+		assertThat(keys).extracting(InMemoryApiKey::getId).containsExactlyInAnyOrder("a", generated.id());
+		assertThat(keys).extracting(InMemoryApiKey::getPrincipalName)
 			.containsExactlyInAnyOrder("seeded", "generated");
-		assertThat(keys).extracting(InMemoryApiKeyDetails::getSecret).containsOnlyNulls();
-		InMemoryApiKeyDetails found = this.repository.findByKeyId("a");
+		assertThat(keys).extracting(InMemoryApiKey::getSecret).containsOnlyNulls();
+		InMemoryApiKey found = this.repository.findByKeyId("a");
 		assertThat(found).isNotNull();
 		assertThat(found.getSecret()).isNotNull();
 	}
@@ -135,11 +135,11 @@ class InMemoryApiKeyRepositoryTests {
 		this.repository.addApiKey("deleted", "secret", "alice", List.of());
 		this.repository.delete("deleted");
 
-		List<InMemoryApiKeyDetails> keys = this.repository.findByPrincipalName("alice");
+		List<InMemoryApiKey> keys = this.repository.findByPrincipalName("alice");
 
-		assertThat(keys).extracting(InMemoryApiKeyDetails::getId).containsExactlyInAnyOrder("a", generated.id());
-		assertThat(keys).extracting(InMemoryApiKeyDetails::getSecret).containsOnlyNulls();
-		InMemoryApiKeyDetails found = this.repository.findByKeyId("a");
+		assertThat(keys).extracting(InMemoryApiKey::getId).containsExactlyInAnyOrder("a", generated.id());
+		assertThat(keys).extracting(InMemoryApiKey::getSecret).containsOnlyNulls();
+		InMemoryApiKey found = this.repository.findByKeyId("a");
 		assertThat(found).isNotNull();
 		assertThat(found.getSecret()).isNotNull();
 	}
@@ -161,25 +161,25 @@ class InMemoryApiKeyRepositoryTests {
 				return ("custom:" + raw).equals(encoded);
 			}
 		};
-		InMemoryApiKeyRepository<InMemoryApiKeyDetails> custom = new InMemoryApiKeyRepository<>(
-				InMemoryApiKeyDetails::new, encoder);
+		InMemoryApiKeyRepository<InMemoryApiKey> custom = new InMemoryApiKeyRepository<>(
+				InMemoryApiKey::new, encoder);
 		custom.addApiKey("a", "secret", "n", List.of());
-		InMemoryApiKeyDetails seeded = custom.findByKeyId("a");
+		InMemoryApiKey seeded = custom.findByKeyId("a");
 		assertThat(seeded).isNotNull();
 		assertThat(seeded.getSecret()).isEqualTo("custom:secret");
 		GeneratedApiKey key = custom.generate("g", List.of());
-		InMemoryApiKeyDetails generated = custom.findByKeyId(key.id());
+		InMemoryApiKey generated = custom.findByKeyId(key.id());
 		assertThat(generated).isNotNull();
 		assertThat(generated.getSecret()).isEqualTo("custom:" + key.rawSecret());
 	}
 
 	@Test
 	void usesDetailsFactory() {
-		InMemoryApiKeyRepository<TaggedApiKeyDetails> tagged = new InMemoryApiKeyRepository<>(
-				(id, secret, name, authorities) -> new TaggedApiKeyDetails(
-						new InMemoryApiKeyDetails(id, secret, name, authorities), "tag-" + id));
+		InMemoryApiKeyRepository<TaggedApiKey> tagged = new InMemoryApiKeyRepository<>(
+				(id, secret, name, authorities) -> new TaggedApiKey(
+						new InMemoryApiKey(id, secret, name, authorities), "tag-" + id));
 		tagged.addApiKey("a", "secret", "n", List.of(new SimpleGrantedAuthority("X")));
-		TaggedApiKeyDetails details = tagged.findByKeyId("a");
+		TaggedApiKey details = tagged.findByKeyId("a");
 		assertThat(details).isNotNull();
 		assertThat(details.tag()).isEqualTo("tag-a");
 		assertThat(details.getPrincipalName()).isEqualTo("n");
@@ -187,7 +187,7 @@ class InMemoryApiKeyRepositoryTests {
 		assertThat(details.getAuthorities()).extracting("authority").containsExactly("X");
 	}
 
-	record TaggedApiKeyDetails(ApiKeyDetails delegate, String tag) implements ApiKeyDetails {
+	record TaggedApiKey(ApiKey delegate, String tag) implements ApiKey {
 
 		@Override
 		public String getId() {

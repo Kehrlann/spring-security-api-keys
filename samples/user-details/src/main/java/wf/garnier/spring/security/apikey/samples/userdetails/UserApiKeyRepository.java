@@ -50,7 +50,7 @@ import wf.garnier.spring.security.apikey.GeneratedApiKey;
  *
  * @author Daniel Garnier-Moiroux
  */
-public class UserApiKeyRepository implements ApiKeyRepository<UserApiKeyDetails> {
+public class UserApiKeyRepository implements ApiKeyRepository<UserApiKey> {
 
 	private static final Pattern VALID = Pattern.compile("[A-Za-z0-9_-]+");
 
@@ -71,7 +71,7 @@ public class UserApiKeyRepository implements ApiKeyRepository<UserApiKeyDetails>
 	}
 
 	@Override
-	public @Nullable UserApiKeyDetails findByKeyId(String keyId) {
+	public @Nullable UserApiKey findByKeyId(String keyId) {
 		StoredKey key = this.keys.get(keyId);
 		if (key == null) {
 			return null;
@@ -127,7 +127,7 @@ public class UserApiKeyRepository implements ApiKeyRepository<UserApiKeyDetails>
 	 * or its hash. Empty if the owner is no longer active.
 	 */
 	@Override
-	public List<UserApiKeyDetails> findByPrincipalName(String principalName) {
+	public List<UserApiKey> findByPrincipalName(String principalName) {
 		UserDetails user = loadActiveUser(principalName);
 		if (user == null) {
 			return List.of();
@@ -136,7 +136,7 @@ public class UserApiKeyRepository implements ApiKeyRepository<UserApiKeyDetails>
 			.stream()
 			.filter((entry) -> entry.getValue().username().equals(principalName))
 			.map((entry) -> toDetails(entry.getKey(), null, entry.getValue(), user))
-			.sorted(Comparator.comparing(UserApiKeyDetails::getCreatedAt).thenComparing(UserApiKeyDetails::getId))
+			.sorted(Comparator.comparing(UserApiKey::getCreatedAt).thenComparing(UserApiKey::getId))
 			.toList();
 	}
 
@@ -152,7 +152,7 @@ public class UserApiKeyRepository implements ApiKeyRepository<UserApiKeyDetails>
 		this.keys.computeIfPresent(keyId, (id, key) -> key.username().equals(username) ? null : key);
 	}
 
-	private static UserApiKeyDetails toDetails(String keyId, @Nullable String hash, StoredKey key, UserDetails user) {
+	private static UserApiKey toDetails(String keyId, @Nullable String hash, StoredKey key, UserDetails user) {
 		Set<@Nullable String> granted = user.getAuthorities()
 			.stream()
 			.map(GrantedAuthority::getAuthority)
@@ -161,7 +161,7 @@ public class UserApiKeyRepository implements ApiKeyRepository<UserApiKeyDetails>
 			.stream()
 			.filter((authority) -> granted.contains(authority.getAuthority()))
 			.toList();
-		return new UserApiKeyDetails(keyId, hash, key.username(), key.label(), authorities, key.createdAt());
+		return new UserApiKey(keyId, hash, key.username(), key.label(), authorities, key.createdAt());
 	}
 
 	private @Nullable UserDetails loadActiveUser(String username) {

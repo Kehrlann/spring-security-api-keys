@@ -72,7 +72,7 @@ class ApiKeyUnitTests {
 
 	@Test
 	void detailsNameAndLabelDefaultToId() {
-		ApiKeyDetails details = new ApiKeyDetails() {
+		ApiKey details = new ApiKey() {
 			public String getId() {
 				return "abc";
 			}

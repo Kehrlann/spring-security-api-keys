@@ -29,7 +29,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.Assert;
 
-import wf.garnier.spring.security.apikey.ApiKeyDetails;
+import wf.garnier.spring.security.apikey.ApiKey;
 import wf.garnier.spring.security.apikey.ApiKeyPasswordEncoders;
 import wf.garnier.spring.security.apikey.ApiKeyRepository;
 import wf.garnier.spring.security.apikey.ApiKeySecrets;
@@ -44,7 +44,7 @@ import wf.garnier.spring.security.apikey.GeneratedApiKey;
  * @param <T> the type of details returned
  * @author Daniel Garnier-Moiroux
  */
-public class InMemoryApiKeyRepository<T extends ApiKeyDetails> implements ApiKeyRepository<T> {
+public class InMemoryApiKeyRepository<T extends ApiKey> implements ApiKeyRepository<T> {
 
 	private static final Pattern VALID = Pattern.compile("[A-Za-z0-9_-]+");
 
@@ -140,7 +140,7 @@ public class InMemoryApiKeyRepository<T extends ApiKeyDetails> implements ApiKey
 	 * @param <T> the type of details built
 	 */
 	@FunctionalInterface
-	public interface DetailsFactory<T extends ApiKeyDetails> {
+	public interface DetailsFactory<T extends ApiKey> {
 
 		/**
 		 * Build a fresh details instance.

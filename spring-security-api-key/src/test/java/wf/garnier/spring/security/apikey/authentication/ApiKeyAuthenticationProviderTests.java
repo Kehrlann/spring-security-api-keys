@@ -23,7 +23,7 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import wf.garnier.spring.security.apikey.ApiKeyPasswordEncoders;
 import wf.garnier.spring.security.apikey.GeneratedApiKey;
-import wf.garnier.spring.security.apikey.memory.InMemoryApiKeyDetails;
+import wf.garnier.spring.security.apikey.memory.InMemoryApiKey;
 import wf.garnier.spring.security.apikey.memory.InMemoryApiKeyRepository;
 
 import org.springframework.security.authentication.BadCredentialsException;
@@ -39,8 +39,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ApiKeyAuthenticationProviderTests {
 
-	InMemoryApiKeyRepository<InMemoryApiKeyDetails> repository = new InMemoryApiKeyRepository<>(
-			InMemoryApiKeyDetails::new);
+	InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(
+			InMemoryApiKey::new);
 
 	List<String> encoderCalls = new ArrayList<>();
 
@@ -74,7 +74,7 @@ class ApiKeyAuthenticationProviderTests {
 	@Test
 	void looksUpTheKeyIdNotTheNameWhenThePrincipalIsDetails() {
 		this.repository.addApiKey("id", "secret", "Name", List.of());
-		InMemoryApiKeyDetails details = this.repository.findByKeyId("id");
+		InMemoryApiKey details = this.repository.findByKeyId("id");
 		assertThat(details).isNotNull();
 		ApiKeyAuthenticationToken token = ApiKeyAuthenticationToken.authenticated(details, List.of())
 			.toBuilder()
@@ -106,9 +106,9 @@ class ApiKeyAuthenticationProviderTests {
 
 	@Test
 	void repositoryFailureIsWrapped() {
-		var failing = new InMemoryApiKeyRepository<>(InMemoryApiKeyDetails::new) {
+		var failing = new InMemoryApiKeyRepository<>(InMemoryApiKey::new) {
 			@Override
-			public InMemoryApiKeyDetails findByKeyId(String keyId) {
+			public InMemoryApiKey findByKeyId(String keyId) {
 				throw new IllegalStateException("db down");
 			}
 		};

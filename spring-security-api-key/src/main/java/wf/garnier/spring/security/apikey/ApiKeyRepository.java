@@ -36,10 +36,10 @@ import org.springframework.security.core.GrantedAuthority;
  * <li>Keys that are expired or revoked must not be returned.</li>
  * </ul>
  *
- * @param <T> the type of details stored
+ * @param <T> the type of key stored
  * @author Daniel Garnier-Moiroux
  */
-public interface ApiKeyRepository<T extends ApiKeyDetails> {
+public interface ApiKeyRepository<T extends ApiKey> {
 
 	/**
 	 * Find a key by id.

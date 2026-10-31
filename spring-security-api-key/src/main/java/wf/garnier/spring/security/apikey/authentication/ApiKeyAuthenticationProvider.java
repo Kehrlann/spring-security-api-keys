@@ -31,7 +31,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import wf.garnier.spring.security.apikey.ApiKeyDetails;
+import wf.garnier.spring.security.apikey.ApiKey;
 import wf.garnier.spring.security.apikey.ApiKeyPasswordEncoders;
 import wf.garnier.spring.security.apikey.ApiKeyRepository;
 
@@ -74,7 +74,7 @@ public class ApiKeyAuthenticationProvider implements AuthenticationProvider {
 		Object presented = token.getCredentials();
 		String rawSecret = presented == null ? "" : presented.toString();
 
-		ApiKeyDetails details;
+		ApiKey details;
 		try {
 			details = this.repository.findByKeyId(keyId);
 		}
@@ -102,7 +102,7 @@ public class ApiKeyAuthenticationProvider implements AuthenticationProvider {
 	}
 
 	private static String keyId(ApiKeyAuthenticationToken token) {
-		if (token.getPrincipal() instanceof ApiKeyDetails details) {
+		if (token.getPrincipal() instanceof ApiKey details) {
 			return details.getId();
 		}
 		return String.valueOf(token.getPrincipal());

@@ -47,7 +47,7 @@ class UserApiKeyRepositoryTests {
 
 		assertThat(this.repository.generate("alice", List.of()).id()).isEqualTo("api1");
 		assertThat(this.repository.generate("alice", List.of()).id()).isEqualTo("api3");
-		assertThat(this.repository.findByPrincipalName("alice")).extracting(UserApiKeyDetails::getLabel)
+		assertThat(this.repository.findByPrincipalName("alice")).extracting(UserApiKey::getLabel)
 			.containsExactly("Seeded", "API key", "API key");
 	}
 

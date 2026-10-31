@@ -186,7 +186,7 @@ class UserDetailsSampleApplicationTests {
 			.uri("/api-keys")
 			.header("X-API-Key", "alice-admin.alice-admin-secret")
 			.param("label", "Minted with a key")).hasRedirectedUrl("/login?factor.type=password&factor.reason=missing");
-		assertThat(this.apiKeyRepository.findByPrincipalName("alice")).extracting(UserApiKeyDetails::getLabel)
+		assertThat(this.apiKeyRepository.findByPrincipalName("alice")).extracting(UserApiKey::getLabel)
 			.doesNotContain("Minted with a key");
 	}
 

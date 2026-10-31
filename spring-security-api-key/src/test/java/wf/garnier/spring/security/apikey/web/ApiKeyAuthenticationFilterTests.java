@@ -30,7 +30,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 
 import wf.garnier.spring.security.apikey.authentication.ApiKeyAuthenticationProvider;
-import wf.garnier.spring.security.apikey.memory.InMemoryApiKeyDetails;
+import wf.garnier.spring.security.apikey.memory.InMemoryApiKey;
 import wf.garnier.spring.security.apikey.memory.InMemoryApiKeyRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,8 +38,8 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 class ApiKeyAuthenticationFilterTests {
 
-	InMemoryApiKeyRepository<InMemoryApiKeyDetails> repository = new InMemoryApiKeyRepository<>(
-			InMemoryApiKeyDetails::new);
+	InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(
+			InMemoryApiKey::new);
 
 	AuthenticationManager manager = new ProviderManager(new ApiKeyAuthenticationProvider(this.repository));
 

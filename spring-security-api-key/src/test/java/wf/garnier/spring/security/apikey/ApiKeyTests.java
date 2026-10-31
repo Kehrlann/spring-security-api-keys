@@ -47,7 +47,7 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import wf.garnier.spring.security.apikey.config.ApiKeyConfigurer;
-import wf.garnier.spring.security.apikey.memory.InMemoryApiKeyDetails;
+import wf.garnier.spring.security.apikey.memory.InMemoryApiKey;
 import wf.garnier.spring.security.apikey.memory.InMemoryApiKeyRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,7 +64,7 @@ class ApiKeyTests {
 	WebApplicationContext context;
 
 	@Autowired
-	InMemoryApiKeyRepository<InMemoryApiKeyDetails> repository;
+	InMemoryApiKeyRepository<InMemoryApiKey> repository;
 
 	MockMvcTester mvc;
 
@@ -144,9 +144,9 @@ class ApiKeyTests {
 	static class Config {
 
 		@Bean
-		InMemoryApiKeyRepository<InMemoryApiKeyDetails> repository() {
-			InMemoryApiKeyRepository<InMemoryApiKeyDetails> repository = new InMemoryApiKeyRepository<>(
-					InMemoryApiKeyDetails::new);
+		InMemoryApiKeyRepository<InMemoryApiKey> repository() {
+			InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(
+					InMemoryApiKey::new);
 			repository.addApiKey("seeded", "seeded-secret_123", "Seeded Key",
 					List.of(new SimpleGrantedAuthority("ROLE_READER")));
 			return repository;

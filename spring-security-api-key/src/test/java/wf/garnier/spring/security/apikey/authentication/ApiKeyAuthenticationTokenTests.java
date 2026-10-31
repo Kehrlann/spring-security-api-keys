@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.core.Transient;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import wf.garnier.spring.security.apikey.ApiKeyDetails;
-import wf.garnier.spring.security.apikey.memory.InMemoryApiKeyDetails;
+import wf.garnier.spring.security.apikey.ApiKey;
+import wf.garnier.spring.security.apikey.memory.InMemoryApiKey;
 import wf.garnier.spring.security.apikey.memory.InMemoryApiKeyRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,11 +37,11 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 
 class ApiKeyAuthenticationTokenTests {
 
-	InMemoryApiKeyDetails details() {
-		InMemoryApiKeyRepository<InMemoryApiKeyDetails> repository = new InMemoryApiKeyRepository<>(
-				InMemoryApiKeyDetails::new);
+	InMemoryApiKey details() {
+		InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(
+				 InMemoryApiKey::new);
 		repository.addApiKey("id", "secret", "Display Name", List.of(new SimpleGrantedAuthority("A")));
-		InMemoryApiKeyDetails details = repository.findByKeyId("id");
+		InMemoryApiKey details = repository.findByKeyId("id");
 		assertThat(details).isNotNull();
 		return details;
 	}
@@ -57,7 +57,7 @@ class ApiKeyAuthenticationTokenTests {
 
 	@Test
 	void authenticatedState() {
-		InMemoryApiKeyDetails details = details();
+		InMemoryApiKey details = details();
 		ApiKeyAuthenticationToken token = ApiKeyAuthenticationToken.authenticated(details, details.getAuthorities());
 		assertThat(token.isAuthenticated()).isTrue();
 		assertThat(token.getName()).isEqualTo("Display Name");
@@ -71,7 +71,7 @@ class ApiKeyAuthenticationTokenTests {
 		ApiKeyAuthenticationToken token = ApiKeyAuthenticationToken.unauthenticated("id", "secret");
 		assertThatIllegalArgumentException().isThrownBy(() -> token.setAuthenticated(true));
 		assertThat(token.isAuthenticated()).isFalse();
-		InMemoryApiKeyDetails details = details();
+		InMemoryApiKey details = details();
 		ApiKeyAuthenticationToken authenticated = ApiKeyAuthenticationToken.authenticated(details,
 				details.getAuthorities());
 		authenticated.setAuthenticated(false);
@@ -80,7 +80,7 @@ class ApiKeyAuthenticationTokenTests {
 
 	@Test
 	void eraseCredentialsErasesPrincipalHash() {
-		InMemoryApiKeyDetails details = details();
+		InMemoryApiKey details = details();
 		ApiKeyAuthenticationToken token = ApiKeyAuthenticationToken.authenticated(details, details.getAuthorities());
 		token.eraseCredentials();
 		assertThat(details.getSecret()).isNull();
@@ -92,7 +92,7 @@ class ApiKeyAuthenticationTokenTests {
 	@Test
 	void toBuilderIsDeclaredAndPreservesState() throws Exception {
 		assertThat(ApiKeyAuthenticationToken.class.getDeclaredMethod("toBuilder")).isNotNull();
-		InMemoryApiKeyDetails details = details();
+		InMemoryApiKey details = details();
 		ApiKeyAuthenticationToken token = ApiKeyAuthenticationToken.authenticated(details, details.getAuthorities());
 		var rebuilt = token.toBuilder().authorities((a) -> a.add(new SimpleGrantedAuthority("B"))).build();
 		assertThat(rebuilt.getPrincipal()).isSameAs(details);
@@ -112,14 +112,14 @@ class ApiKeyAuthenticationTokenTests {
 
 	@Test
 	void authenticatedSurvivesSerialization() throws Exception {
-		InMemoryApiKeyDetails details = details();
+		InMemoryApiKey details = details();
 		ApiKeyAuthenticationToken token = roundTrip(
 				ApiKeyAuthenticationToken.authenticated(details, details.getAuthorities()));
 		assertThat(token.isAuthenticated()).isTrue();
 		assertThat(token.getName()).isEqualTo("Display Name");
 		assertThat(token.getCredentials()).isNull();
 		assertThat(token.getAuthorities()).extracting("authority").containsExactly("A");
-		ApiKeyDetails principal = (ApiKeyDetails) token.getPrincipal();
+		ApiKey principal = (ApiKey) token.getPrincipal();
 		assertThat(principal.getId()).isEqualTo("id");
 		assertThat(principal.getSecret()).isEqualTo(details.getSecret());
 		assertThat(principal.getAuthorities()).extracting("authority").containsExactly("A");

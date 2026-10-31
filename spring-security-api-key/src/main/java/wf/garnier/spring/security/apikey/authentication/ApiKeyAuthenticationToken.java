@@ -27,7 +27,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.Transient;
 import org.springframework.util.Assert;
 
-import wf.garnier.spring.security.apikey.ApiKeyDetails;
+import wf.garnier.spring.security.apikey.ApiKey;
 
 /**
  * An API key authentication. Never persisted to a session.
@@ -64,8 +64,8 @@ public class ApiKeyAuthenticationToken extends AbstractAuthenticationToken {
 		return new ApiKeyAuthenticationToken(keyId, rawSecret, List.of(), false);
 	}
 
-	public static ApiKeyAuthenticationToken authenticated(ApiKeyDetails details,
-			Collection<? extends GrantedAuthority> authorities) {
+	public static ApiKeyAuthenticationToken authenticated(ApiKey details,
+														  Collection<? extends GrantedAuthority> authorities) {
 		return new ApiKeyAuthenticationToken(details, null, authorities, true);
 	}
 
@@ -81,7 +81,7 @@ public class ApiKeyAuthenticationToken extends AbstractAuthenticationToken {
 
 	@Override
 	public String getName() {
-		if (this.principal instanceof ApiKeyDetails details) {
+		if (this.principal instanceof ApiKey details) {
 			return details.getPrincipalName();
 		}
 		return String.valueOf(this.principal);

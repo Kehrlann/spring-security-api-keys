@@ -14,45 +14,44 @@
  * limitations under the License.
  */
 
-package wf.garnier.spring.security.apikey.samples.userdetails;
+package wf.garnier.spring.security.apikey.memory;
 
-import java.time.Instant;
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 
 import org.jspecify.annotations.Nullable;
+import wf.garnier.spring.security.apikey.ApiKey;
 
 import org.springframework.security.core.GrantedAuthority;
 
-import wf.garnier.spring.security.apikey.ApiKeyDetails;
-
 /**
- * An API key owned by a user. The authenticated name is the owner's username.
+ * A simple {@link ApiKey}, usable as a
+ * {@link InMemoryApiKeyRepository.DetailsFactory} with
+ * {@code InMemoryApiKey::new}.
  *
  * @author Daniel Garnier-Moiroux
  */
-public final class UserApiKeyDetails implements ApiKeyDetails {
+public final class InMemoryApiKey implements ApiKey, Serializable {
+
+	@Serial
+	private static final long serialVersionUID = 1L;
 
 	private final String id;
 
-	private @Nullable String secret;
-
-	private final String username;
-
-	private final String label;
+	private final String name;
 
 	private final List<GrantedAuthority> authorities;
 
-	private final Instant createdAt;
+	private @Nullable String secret;
 
-	UserApiKeyDetails(String id, @Nullable String secret, String username, String label,
-			Collection<? extends GrantedAuthority> authorities, Instant createdAt) {
+	public InMemoryApiKey(String id, String secret, String name,
+						  Collection<? extends GrantedAuthority> authorities) {
 		this.id = id;
 		this.secret = secret;
-		this.username = username;
-		this.label = label;
+		this.name = name;
 		this.authorities = List.copyOf(authorities);
-		this.createdAt = createdAt;
 	}
 
 	@Override
@@ -67,21 +66,12 @@ public final class UserApiKeyDetails implements ApiKeyDetails {
 
 	@Override
 	public String getPrincipalName() {
-		return this.username;
+		return this.name;
 	}
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		return this.authorities;
-	}
-
-	@Override
-	public String getLabel() {
-		return this.label;
-	}
-
-	public Instant getCreatedAt() {
-		return this.createdAt;
 	}
 
 	@Override
@@ -91,7 +81,7 @@ public final class UserApiKeyDetails implements ApiKeyDetails {
 
 	@Override
 	public String toString() {
-		return "UserApiKeyDetails [id=" + this.id + ", user=" + this.username + "]";
+		return "InMemoryApiKeyDetails [id=" + this.id + ", name=" + this.name + "]";
 	}
 
 }

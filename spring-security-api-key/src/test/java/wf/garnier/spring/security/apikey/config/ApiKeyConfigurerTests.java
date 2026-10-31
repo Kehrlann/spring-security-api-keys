@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Test;
 import wf.garnier.spring.security.apikey.ApiKeyRepository;
-import wf.garnier.spring.security.apikey.memory.InMemoryApiKeyDetails;
+import wf.garnier.spring.security.apikey.memory.InMemoryApiKey;
 import wf.garnier.spring.security.apikey.memory.InMemoryApiKeyRepository;
 
 import org.springframework.context.annotation.Bean;
@@ -54,8 +54,8 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 
 class ApiKeyConfigurerTests {
 
-	static final InMemoryApiKeyRepository<InMemoryApiKeyDetails> REPOSITORY = new InMemoryApiKeyRepository<>(
-			InMemoryApiKeyDetails::new);
+	static final InMemoryApiKeyRepository<InMemoryApiKey> REPOSITORY = new InMemoryApiKeyRepository<>(
+			InMemoryApiKey::new);
 
 	static {
 		REPOSITORY.addApiKey("k", "secret", "Key Owner", List.of(new SimpleGrantedAuthority("ROLE_X")));
@@ -120,7 +120,7 @@ class ApiKeyConfigurerTests {
 
 		@GetMapping("/principal")
 		String principal(
-				@org.springframework.security.core.annotation.AuthenticationPrincipal InMemoryApiKeyDetails details) {
+				@org.springframework.security.core.annotation.AuthenticationPrincipal InMemoryApiKey details) {
 			return details.getId() + "|" + details.getSecret();
 		}
 
@@ -219,7 +219,7 @@ class ApiKeyConfigurerTests {
 	static class OneRepo {
 
 		@Bean
-		InMemoryApiKeyRepository<InMemoryApiKeyDetails> repo() {
+		InMemoryApiKeyRepository<InMemoryApiKey> repo() {
 			return REPOSITORY;
 		}
 
@@ -229,12 +229,12 @@ class ApiKeyConfigurerTests {
 	static class TwoRepos {
 
 		@Bean
-		InMemoryApiKeyRepository<InMemoryApiKeyDetails> repo1() {
+		InMemoryApiKeyRepository<InMemoryApiKey> repo1() {
 			return REPOSITORY;
 		}
 
 		@Bean
-		InMemoryApiKeyRepository<InMemoryApiKeyDetails> repo2() {
+		InMemoryApiKeyRepository<InMemoryApiKey> repo2() {
 			return REPOSITORY;
 		}
 
@@ -327,9 +327,9 @@ class ApiKeyConfigurerTests {
 
 	@Test
 	void repositoryFailureIs500() {
-		ApiKeyRepository<InMemoryApiKeyDetails> failing = new InMemoryApiKeyRepository<>(InMemoryApiKeyDetails::new) {
+		ApiKeyRepository<InMemoryApiKey> failing = new InMemoryApiKeyRepository<>(InMemoryApiKey::new) {
 			@Override
-			public InMemoryApiKeyDetails findByKeyId(String keyId) {
+			public InMemoryApiKey findByKeyId(String keyId) {
 				throw new IllegalStateException("db down");
 			}
 		};
@@ -344,7 +344,7 @@ class ApiKeyConfigurerTests {
 	void principalIsTheApiKeyDetailsWithErasedSecret() {
 		MockMvcTester mvc = mvc(ApiKeyConfigurerTests::defaults);
 		assertThat(mvc.get().uri("/principal").header("X-API-Key", "k.secret")).hasBodyTextEqualTo("k|null");
-		InMemoryApiKeyDetails details = REPOSITORY.findByKeyId("k");
+		InMemoryApiKey details = REPOSITORY.findByKeyId("k");
 		assertThat(details).isNotNull();
 		assertThat(details.getSecret()).startsWith("{sha256}");
 	}
