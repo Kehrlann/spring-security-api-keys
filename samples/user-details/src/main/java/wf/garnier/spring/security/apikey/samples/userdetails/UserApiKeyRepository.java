@@ -16,15 +16,10 @@
 
 package wf.garnier.spring.security.apikey.samples.userdetails;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
@@ -33,16 +28,16 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.util.Assert;
 
-import wf.garnier.spring.security.apikey.ApiKeyPasswordEncoders;
 import wf.garnier.spring.security.apikey.ApiKeyRepository;
-import wf.garnier.spring.security.apikey.ApiKeySecrets;
 import wf.garnier.spring.security.apikey.GeneratedApiKey;
+import wf.garnier.spring.security.apikey.memory.InMemoryApiKey;
+import wf.garnier.spring.security.apikey.memory.InMemoryApiKeyRepository;
 
 /**
- * In-memory API keys owned by users of a {@link UserDetailsService}.
+ * API keys owned by users of a {@link UserDetailsService}. Wraps an
+ * {@link InMemoryApiKeyRepository}, which stores the keys, and checks every key against
+ * its owner.
  * <p>
  * The owner is loaded on every lookup, so a key stops working as soon as its owner is
  * deleted, disabled, locked or expired. A key grants the authorities it was created with,
@@ -50,118 +45,80 @@ import wf.garnier.spring.security.apikey.GeneratedApiKey;
  *
  * @author Daniel Garnier-Moiroux
  */
-public class UserApiKeyRepository implements ApiKeyRepository<UserApiKey> {
+public class UserApiKeyRepository implements ApiKeyRepository<InMemoryApiKey> {
 
-	private static final Pattern VALID = Pattern.compile("[A-Za-z0-9_-]+");
-
-	private static final String DEFAULT_LABEL = "API key";
-
-	private static final String ID_PREFIX = "api";
-
-	private final Map<String, StoredKey> keys = new ConcurrentHashMap<>();
-
-	private final AtomicLong sequence = new AtomicLong();
-
-	private final PasswordEncoder passwordEncoder = ApiKeyPasswordEncoders.createDelegatingPasswordEncoder();
+	private final InMemoryApiKeyRepository<InMemoryApiKey> delegate;
 
 	private final UserDetailsService userDetailsService;
 
-	public UserApiKeyRepository(UserDetailsService userDetailsService) {
+	public UserApiKeyRepository(InMemoryApiKeyRepository<InMemoryApiKey> delegate,
+			UserDetailsService userDetailsService) {
+		this.delegate = delegate;
 		this.userDetailsService = userDetailsService;
 	}
 
 	@Override
-	public @Nullable UserApiKey findByKeyId(String keyId) {
-		StoredKey key = this.keys.get(keyId);
+	public @Nullable InMemoryApiKey findByKeyId(String keyId) {
+		InMemoryApiKey key = this.delegate.findByKeyId(keyId);
 		if (key == null) {
 			return null;
 		}
-		UserDetails user = loadActiveUser(key.username());
+		UserDetails user = loadActiveUser(key.getPrincipalName());
 		if (user == null) {
 			return null;
 		}
-		return toDetails(keyId, key.hash(), key, user);
+		return restrictToOwner(key, user);
 	}
 
 	/**
-	 * Generate a key owned by {@code username}, with a default label.
+	 * The keys owned by {@code principalName}, sorted by label. They never carry the
+	 * secret or its hash. Empty if the owner is no longer active.
 	 */
 	@Override
-	public GeneratedApiKey generate(String principalName, Collection<? extends GrantedAuthority> authorities) {
-		return generate(principalName, DEFAULT_LABEL, authorities);
-	}
-
-	/**
-	 * Generate a key owned by {@code username}. Ids are {@code api1}, {@code api2}, and
-	 * so on.
-	 */
-	public GeneratedApiKey generate(String username, String label, Collection<? extends GrantedAuthority> authorities) {
-		String secret = ApiKeySecrets.generate();
-		StoredKey key = new StoredKey(this.passwordEncoder.encode(secret), username, label, List.copyOf(authorities),
-				Instant.now());
-		// Skips ids already taken by seeded keys
-		while (true) {
-			String id = ID_PREFIX + this.sequence.incrementAndGet();
-			if (this.keys.putIfAbsent(id, key) == null) {
-				return new GeneratedApiKey(id, secret);
-			}
-		}
-	}
-
-	/**
-	 * Add a key with a known id and secret, owned by {@code username}. For demos only.
-	 */
-	public void addApiKey(String id, String rawSecret, String username, String label,
-			Collection<? extends GrantedAuthority> authorities) {
-		Assert.isTrue(VALID.matcher(id).matches(), "id must match [A-Za-z0-9_-]+");
-		Assert.isTrue(VALID.matcher(rawSecret).matches(), "secret must match [A-Za-z0-9_-]+");
-		StoredKey key = new StoredKey(this.passwordEncoder.encode(rawSecret), username, label, List.copyOf(authorities),
-				Instant.now());
-		if (this.keys.putIfAbsent(id, key) != null) {
-			throw new IllegalArgumentException("An API key with id '" + id + "' already exists");
-		}
-	}
-
-	/**
-	 * The keys owned by {@code principalName}, oldest first. They never carry the secret
-	 * or its hash. Empty if the owner is no longer active.
-	 */
-	@Override
-	public List<UserApiKey> findByPrincipalName(String principalName) {
+	public List<InMemoryApiKey> findByPrincipalName(String principalName) {
 		UserDetails user = loadActiveUser(principalName);
 		if (user == null) {
 			return List.of();
 		}
-		return this.keys.entrySet()
+		return this.delegate.findByPrincipalName(principalName)
 			.stream()
-			.filter((entry) -> entry.getValue().username().equals(principalName))
-			.map((entry) -> toDetails(entry.getKey(), null, entry.getValue(), user))
-			.sorted(Comparator.comparing(UserApiKey::getCreatedAt).thenComparing(UserApiKey::getId))
+			.map((key) -> restrictToOwner(key, user))
+			.sorted(Comparator.comparing(InMemoryApiKey::getLabel).thenComparing(InMemoryApiKey::getId))
 			.toList();
 	}
 
 	@Override
+	public GeneratedApiKey generate(String principalName, String label,
+			Collection<? extends GrantedAuthority> authorities) {
+		return this.delegate.generate(principalName, label, authorities);
+	}
+
+	@Override
 	public void delete(String keyId) {
-		this.keys.remove(keyId);
+		this.delegate.delete(keyId);
 	}
 
 	/**
 	 * Delete a key, only if it is owned by {@code username}.
 	 */
 	public void delete(String username, String keyId) {
-		this.keys.computeIfPresent(keyId, (id, key) -> key.username().equals(username) ? null : key);
+		InMemoryApiKey key = this.delegate.findByKeyId(keyId);
+		if (key != null && key.getPrincipalName().equals(username)) {
+			this.delegate.delete(keyId);
+		}
 	}
 
-	private static UserApiKey toDetails(String keyId, @Nullable String hash, StoredKey key, UserDetails user) {
+	private static InMemoryApiKey restrictToOwner(InMemoryApiKey key, UserDetails user) {
 		Set<@Nullable String> granted = user.getAuthorities()
 			.stream()
 			.map(GrantedAuthority::getAuthority)
 			.collect(Collectors.toSet());
-		List<GrantedAuthority> authorities = key.authorities()
+		List<GrantedAuthority> authorities = key.getAuthorities()
 			.stream()
 			.filter((authority) -> granted.contains(authority.getAuthority()))
+			.map(GrantedAuthority.class::cast)
 			.toList();
-		return new UserApiKey(keyId, hash, key.username(), key.label(), authorities, key.createdAt());
+		return new InMemoryApiKey(key.getId(), key.getSecret(), key.getPrincipalName(), key.getLabel(), authorities);
 	}
 
 	private @Nullable UserDetails loadActiveUser(String username) {
@@ -176,10 +133,6 @@ public class UserApiKeyRepository implements ApiKeyRepository<UserApiKey> {
 			return null;
 		}
 		return user;
-	}
-
-	private record StoredKey(String hash, String username, String label, List<GrantedAuthority> authorities,
-			Instant createdAt) {
 	}
 
 }

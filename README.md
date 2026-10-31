@@ -42,13 +42,13 @@ Behaviour:
 
 ## Keys
 
-A key is `<keyId>.<secret>`; both parts match `[A-Za-z0-9_-]+`. Generate one with `repository.generate(name, authorities)`; the raw secret is returned once, in the `GeneratedApiKey` (`getUserFacingApiKey()`).
+A key is `<keyId>.<secret>`; both parts match `[A-Za-z0-9_-]+`. Generate one with `repository.generate(name, label, authorities)`; the raw secret is returned once, in the `GeneratedApiKey` (`getUserFacingApiKey()`).
 
 Only the secret is hashed, never the full key. The default encoder is a `DelegatingPasswordEncoder` that encodes with `{sha256}` (lowercase hex of unsalted SHA-256, compared in constant time) and also verifies `{bcrypt}`, `{argon2}`, etc. SHA-256 is appropriate because secrets are 32 random bytes. The application's own `PasswordEncoder` bean is never used.
 
 Verification (configurer) and generation (repository) use separate encoders sharing one default. If you plug in a fully custom encoder, set it on both.
 
-`InMemoryApiKeyRepository<T>` is for demos, tests and local development. It takes a `DetailsFactory<T>` that builds your details type from the stored data, e.g. `new InMemoryApiKeyRepository<>(InMemoryApiKey::new)`. `addApiKey(id, rawSecret, name, label, authorities)` seeds a known key; `addApiKey(id, rawSecret, name, authorities)` and `generate` use the key id as the label.
+`InMemoryApiKeyRepository<T>` is for demos, tests and local development. It takes a `DetailsFactory<T>` that builds your details type from the stored data, e.g. `new InMemoryApiKeyRepository<>(InMemoryApiKey::new)`. `addApiKey(id, rawSecret, name, label, authorities)` seeds a known key; `addApiKey(id, rawSecret, name, authorities)` uses the key id as the label.
 
 ## Custom repository
 

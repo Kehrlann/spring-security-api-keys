@@ -55,10 +55,10 @@ public interface ApiKeyRepository<T extends ApiKey> {
 	List<T> findByPrincipalName(String principalName);
 
 	/**
-	 * Generate, hash and persist a new key. The raw secret is only available in the
-	 * returned value.
+	 * Generate, hash and persist a new key with a human-readable label. The raw secret is
+	 * only available in the returned value.
 	 */
-	GeneratedApiKey generate(String principalName, Collection<? extends GrantedAuthority> authorities);
+	GeneratedApiKey generate(String principalName, String label, Collection<? extends GrantedAuthority> authorities);
 
 	/**
 	 * Delete a key. Deleting an unknown id is a no-op.

@@ -81,7 +81,8 @@ class ApiKeyTests {
 
 	@Test
 	void generatedKey() {
-		GeneratedApiKey key = this.repository.generate("Generated", List.of(new SimpleGrantedAuthority("ROLE_READER")));
+		GeneratedApiKey key = this.repository.generate("Generated", "Test key",
+				List.of(new SimpleGrantedAuthority("ROLE_READER")));
 		assertThat(this.mvc.get().uri("/me").header("X-API-Key", key.getUserFacingApiKey())).hasStatusOk()
 			.hasBodyTextEqualTo("Generated|ROLE_READER,FACTOR_API_KEY");
 	}
@@ -96,7 +97,7 @@ class ApiKeyTests {
 	@Test
 	void authorityProtectedEndpoint() {
 		assertThat(this.mvc.get().uri("/reader").header("X-API-Key", SEEDED)).hasStatusOk();
-		GeneratedApiKey key = this.repository.generate("No authorities", List.of());
+		GeneratedApiKey key = this.repository.generate("No authorities", "Test key", List.of());
 		assertThat(this.mvc.get().uri("/reader").header("X-API-Key", key.getUserFacingApiKey()))
 			.hasStatus(HttpStatus.FORBIDDEN);
 	}
@@ -131,7 +132,7 @@ class ApiKeyTests {
 
 	@Test
 	void deletedKeyIsRejected() {
-		GeneratedApiKey key = this.repository.generate("Temp", List.of());
+		GeneratedApiKey key = this.repository.generate("Temp", "Test key", List.of());
 		assertThat(this.mvc.get().uri("/me").header("X-API-Key", key.getUserFacingApiKey())).hasStatusOk();
 		this.repository.delete(key.id());
 		assertThat(this.mvc.get().uri("/me").header("X-API-Key", key.getUserFacingApiKey()))

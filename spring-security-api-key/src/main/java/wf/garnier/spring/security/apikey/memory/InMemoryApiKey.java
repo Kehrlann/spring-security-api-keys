@@ -47,7 +47,7 @@ public final class InMemoryApiKey implements ApiKey, Serializable {
 
 	private @Nullable String secret;
 
-	public InMemoryApiKey(String id, String secret, String name, String label,
+	public InMemoryApiKey(String id, @Nullable String secret, String name, String label,
 			Collection<? extends GrantedAuthority> authorities) {
 		this.id = id;
 		this.secret = secret;

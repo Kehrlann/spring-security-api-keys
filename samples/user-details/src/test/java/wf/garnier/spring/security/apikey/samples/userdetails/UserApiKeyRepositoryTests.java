@@ -25,36 +25,66 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
 import wf.garnier.spring.security.apikey.GeneratedApiKey;
+import wf.garnier.spring.security.apikey.memory.InMemoryApiKey;
+import wf.garnier.spring.security.apikey.memory.InMemoryApiKeyRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class UserApiKeyRepositoryTests {
 
-	UserApiKeyRepository repository = new UserApiKeyRepository(new InMemoryUserDetailsManager(
-			User.withUsername("alice").password("{noop}password").roles("USER").build()));
+	InMemoryApiKeyRepository<InMemoryApiKey> keys = new InMemoryApiKeyRepository<>(InMemoryApiKey::new);
+
+	InMemoryUserDetailsManager users = new InMemoryUserDetailsManager(
+			User.withUsername("alice").password("{noop}password").roles("USER").build(),
+			User.withUsername("bob").password("{noop}password").roles("USER").build());
+
+	UserApiKeyRepository repository = new UserApiKeyRepository(this.keys, this.users);
 
 	@Test
-	void generatedIdsAreSequential() {
-		assertThat(this.repository.generate("alice", List.of()).id()).isEqualTo("api1");
-		assertThat(this.repository.generate("alice", List.of()).id()).isEqualTo("api2");
-		assertThat(this.repository.generate("alice", List.of()).id()).isEqualTo("api3");
+	void listsOwnKeysByLabelWithoutCredentials() {
+		this.repository.generate("alice", "Zeta", List.of());
+		this.repository.generate("alice", "Alpha", List.of());
+		this.repository.generate("bob", "Bob's key", List.of());
+
+		List<InMemoryApiKey> keys = this.repository.findByPrincipalName("alice");
+
+		assertThat(keys).extracting(InMemoryApiKey::getLabel).containsExactly("Alpha", "Zeta");
+		assertThat(keys).extracting(InMemoryApiKey::getSecret).containsOnlyNulls();
 	}
 
 	@Test
-	void generatedIdsSkipSeededIds() {
-		this.repository.addApiKey("api2", "seeded-secret", "alice", "Seeded",
-				AuthorityUtils.createAuthorityList("ROLE_USER"));
+	void keyGrantsOnlyAuthoritiesItsOwnerHas() {
+		GeneratedApiKey key = this.repository.generate("alice", "Key",
+				AuthorityUtils.createAuthorityList("ROLE_USER", "ROLE_ADMIN"));
 
-		assertThat(this.repository.generate("alice", List.of()).id()).isEqualTo("api1");
-		assertThat(this.repository.generate("alice", List.of()).id()).isEqualTo("api3");
-		assertThat(this.repository.findByPrincipalName("alice")).extracting(UserApiKey::getLabel)
-			.containsExactly("Seeded", "API key", "API key");
+		InMemoryApiKey found = this.repository.findByKeyId(key.id());
+
+		assertThat(found).isNotNull();
+		assertThat(found.getSecret()).isNotNull();
+		assertThat(found.getAuthorities()).extracting("authority").containsExactly("ROLE_USER");
+		assertThat(this.repository.findByPrincipalName("alice")).flatExtracting(InMemoryApiKey::getAuthorities)
+			.extracting("authority")
+			.containsExactly("ROLE_USER");
 	}
 
 	@Test
-	void userFacingKeyIsIdDotSecret() {
-		GeneratedApiKey key = this.repository.generate("alice", List.of());
-		assertThat(key.getUserFacingApiKey()).isEqualTo("api1." + key.rawSecret()).matches("api1\\.[A-Za-z0-9_-]{43}");
+	void keyOfInactiveOwnerIsNotFound() {
+		GeneratedApiKey key = this.repository.generate("alice", "Key", List.of());
+		this.users.updateUser(User.withUsername("alice").password("{noop}password").disabled(true).build());
+
+		assertThat(this.repository.findByKeyId(key.id())).isNull();
+		assertThat(this.repository.findByPrincipalName("alice")).isEmpty();
+	}
+
+	@Test
+	void deletesOnlyOwnKeys() {
+		GeneratedApiKey key = this.repository.generate("alice", "Key", List.of());
+
+		this.repository.delete("bob", key.id());
+		assertThat(this.repository.findByKeyId(key.id())).isNotNull();
+
+		this.repository.delete("alice", key.id());
+		assertThat(this.repository.findByKeyId(key.id())).isNull();
 	}
 
 }

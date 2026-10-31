@@ -85,7 +85,7 @@ class ApiKeyAuthenticationProviderTests {
 
 	@Test
 	void unknownIdAndWrongSecretLookIdentical() {
-		GeneratedApiKey key = this.repository.generate("n", List.of());
+		GeneratedApiKey key = this.repository.generate("n", "Test key", List.of());
 		assertThatThrownBy(
 				() -> this.provider.authenticate(ApiKeyAuthenticationToken.unauthenticated(key.id(), "wrong")))
 			.isInstanceOf(BadCredentialsException.class)

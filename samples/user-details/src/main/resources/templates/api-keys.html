@@ -37,7 +37,6 @@
 		<th>Name</th>
 		<th>Id</th>
 		<th>Roles</th>
-		<th>Created</th>
 		<th></th>
 	</tr>
 	</thead>
@@ -46,7 +45,6 @@
 		<td th:text="${apiKey.label}">CI</td>
 		<td><code th:text="${apiKey.id}">key-id</code></td>
 		<td th:text="${#strings.listJoin(apiKey.authorities.![authority], ', ')}">ROLE_USER</td>
-		<td th:text="${#temporals.format(apiKey.createdAt, 'yyyy-MM-dd HH:mm')}">2026-01-01 00:00</td>
 		<td>
 			<form class="inline" th:action="@{/api-keys/{id}/delete(id=${apiKey.id})}" method="post">
 				<button type="submit">Delete</button>

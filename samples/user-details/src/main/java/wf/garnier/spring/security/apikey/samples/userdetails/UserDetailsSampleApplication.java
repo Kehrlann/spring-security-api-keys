@@ -17,6 +17,8 @@
 package wf.garnier.spring.security.apikey.samples.userdetails;
 
 import wf.garnier.spring.security.apikey.config.ApiKeyConfigurer;
+import wf.garnier.spring.security.apikey.memory.InMemoryApiKey;
+import wf.garnier.spring.security.apikey.memory.InMemoryApiKeyRepository;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -69,19 +71,19 @@ public class UserDetailsSampleApplication {
 
 	@Bean
 	UserApiKeyRepository apiKeyRepository(UserDetailsService userDetailsService) {
-		UserApiKeyRepository repository = new UserApiKeyRepository(userDetailsService);
+		InMemoryApiKeyRepository<InMemoryApiKey> keys = new InMemoryApiKeyRepository<>(InMemoryApiKey::new);
 		// Known keys, for the demo only
-		repository.addApiKey("alice-admin", "alice-admin-secret", "alice", "Admin key",
+		keys.addApiKey("alice-admin", "alice-admin-secret", "alice", "Admin key",
 				AuthorityUtils.createAuthorityList("ROLE_USER", "ROLE_ADMIN"));
-		repository.addApiKey("alice-user", "alice-user-secret", "alice", "Read-only key",
+		keys.addApiKey("alice-user", "alice-user-secret", "alice", "Read-only key",
 				AuthorityUtils.createAuthorityList("ROLE_USER"));
 		// bob is not an admin, so this key does not grant ROLE_ADMIN
-		repository.addApiKey("bob", "bob-secret", "bob", "Overreaching key",
+		keys.addApiKey("bob", "bob-secret", "bob", "Overreaching key",
 				AuthorityUtils.createAuthorityList("ROLE_USER", "ROLE_ADMIN"));
 		// carol is disabled, so this key is rejected
-		repository.addApiKey("carol", "carol-secret", "carol", "Disabled user's key",
+		keys.addApiKey("carol", "carol-secret", "carol", "Disabled user's key",
 				AuthorityUtils.createAuthorityList("ROLE_USER"));
-		return repository;
+		return new UserApiKeyRepository(keys, userDetailsService);
 	}
 
 }

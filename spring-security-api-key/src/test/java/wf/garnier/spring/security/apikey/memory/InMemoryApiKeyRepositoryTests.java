@@ -38,14 +38,14 @@ class InMemoryApiKeyRepositoryTests {
 
 	@Test
 	void generatesSequentialIds() {
-		assertThat(this.repository.generate("a", List.of()).id()).isEqualTo("api1");
-		assertThat(this.repository.generate("b", List.of()).id()).isEqualTo("api2");
+		assertThat(this.repository.generate("a", "Test key", List.of()).id()).isEqualTo("api1");
+		assertThat(this.repository.generate("b", "Test key", List.of()).id()).isEqualTo("api2");
 	}
 
 	@Test
 	void generateSkipsSeededIds() {
 		this.repository.addApiKey("api1", "secret", "seeded", List.of());
-		GeneratedApiKey key = this.repository.generate("a", List.of());
+		GeneratedApiKey key = this.repository.generate("a", "Test key", List.of());
 		assertThat(key.id()).isEqualTo("api2");
 		InMemoryApiKey seeded = this.repository.findByKeyId("api1");
 		assertThat(seeded).isNotNull();
@@ -99,12 +99,16 @@ class InMemoryApiKeyRepositoryTests {
 	}
 
 	@Test
-	void labelDefaultsToId() {
-		this.repository.addApiKey("a", "secret", "n", List.of());
-		GeneratedApiKey generated = this.repository.generate("g", List.of());
-		assertThat(this.repository.findByKeyId("a")).extracting(InMemoryApiKey::getLabel).isEqualTo("a");
+	void generateStoresLabel() {
+		GeneratedApiKey generated = this.repository.generate("g", "CI pipeline", List.of());
 		assertThat(this.repository.findByKeyId(generated.id())).extracting(InMemoryApiKey::getLabel)
-			.isEqualTo(generated.id());
+			.isEqualTo("CI pipeline");
+	}
+
+	@Test
+	void seededLabelDefaultsToId() {
+		this.repository.addApiKey("a", "secret", "n", List.of());
+		assertThat(this.repository.findByKeyId("a")).extracting(InMemoryApiKey::getLabel).isEqualTo("a");
 	}
 
 	@Test
@@ -124,7 +128,7 @@ class InMemoryApiKeyRepositoryTests {
 	@Test
 	void listKeysReturnsAllKeysWithoutCredentials() {
 		this.repository.addApiKey("a", "secret", "seeded", List.of(new SimpleGrantedAuthority("X")));
-		GeneratedApiKey generated = this.repository.generate("generated", List.of());
+		GeneratedApiKey generated = this.repository.generate("generated", "Test key", List.of());
 		this.repository.addApiKey("deleted", "secret", "deleted", List.of());
 		this.repository.delete("deleted");
 
@@ -146,7 +150,7 @@ class InMemoryApiKeyRepositoryTests {
 	@Test
 	void listByPrincipalNameReturnsOwnedKeysWithoutCredentials() {
 		this.repository.addApiKey("a", "secret", "alice", List.of(new SimpleGrantedAuthority("X")));
-		GeneratedApiKey generated = this.repository.generate("alice", List.of());
+		GeneratedApiKey generated = this.repository.generate("alice", "Test key", List.of());
 		this.repository.addApiKey("b", "secret", "bob", List.of());
 		this.repository.addApiKey("deleted", "secret", "alice", List.of());
 		this.repository.delete("deleted");
@@ -182,7 +186,7 @@ class InMemoryApiKeyRepositoryTests {
 		InMemoryApiKey seeded = custom.findByKeyId("a");
 		assertThat(seeded).isNotNull();
 		assertThat(seeded.getSecret()).isEqualTo("custom:secret");
-		GeneratedApiKey key = custom.generate("g", List.of());
+		GeneratedApiKey key = custom.generate("g", "Test key", List.of());
 		InMemoryApiKey generated = custom.findByKeyId(key.id());
 		assertThat(generated).isNotNull();
 		assertThat(generated.getSecret()).isEqualTo("custom:" + key.rawSecret());

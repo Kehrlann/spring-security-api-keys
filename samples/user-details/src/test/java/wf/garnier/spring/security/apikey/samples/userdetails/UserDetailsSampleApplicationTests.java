@@ -32,6 +32,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 import wf.garnier.spring.security.apikey.GeneratedApiKey;
+import wf.garnier.spring.security.apikey.memory.InMemoryApiKey;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
@@ -87,7 +88,8 @@ class UserDetailsSampleApplicationTests {
 	@Test
 	void apiKeyOfDeletedUserIsRejected() {
 		this.users.createUser(User.withUsername("dave").password("{noop}password").roles("USER").build());
-		GeneratedApiKey key = this.apiKeyRepository.generate("dave", AuthorityUtils.createAuthorityList("ROLE_USER"));
+		GeneratedApiKey key = this.apiKeyRepository.generate("dave", "Test key",
+				AuthorityUtils.createAuthorityList("ROLE_USER"));
 		assertThat(this.mvc.get().uri("/api/me").header("X-API-Key", key.getUserFacingApiKey())).hasStatusOk();
 
 		this.users.deleteUser("dave");
@@ -156,7 +158,8 @@ class UserDetailsSampleApplicationTests {
 
 	@Test
 	void deleteOwnKey() {
-		GeneratedApiKey key = this.apiKeyRepository.generate("alice", AuthorityUtils.createAuthorityList("ROLE_USER"));
+		GeneratedApiKey key = this.apiKeyRepository.generate("alice", "Test key",
+				AuthorityUtils.createAuthorityList("ROLE_USER"));
 		MockHttpSession session = login("alice");
 
 		assertThat(this.mvc.post().uri("/api-keys/{id}/delete", key.id()).session(session).with(csrf()))
@@ -168,7 +171,8 @@ class UserDetailsSampleApplicationTests {
 
 	@Test
 	void cannotDeleteSomeoneElsesKey() {
-		GeneratedApiKey key = this.apiKeyRepository.generate("alice", AuthorityUtils.createAuthorityList("ROLE_USER"));
+		GeneratedApiKey key = this.apiKeyRepository.generate("alice", "Test key",
+				AuthorityUtils.createAuthorityList("ROLE_USER"));
 		MockHttpSession session = login("bob");
 
 		assertThat(this.mvc.post().uri("/api-keys/{id}/delete", key.id()).session(session).with(csrf()))
@@ -186,7 +190,7 @@ class UserDetailsSampleApplicationTests {
 			.uri("/api-keys")
 			.header("X-API-Key", "alice-admin.alice-admin-secret")
 			.param("label", "Minted with a key")).hasRedirectedUrl("/login?factor.type=password&factor.reason=missing");
-		assertThat(this.apiKeyRepository.findByPrincipalName("alice")).extracting(UserApiKey::getLabel)
+		assertThat(this.apiKeyRepository.findByPrincipalName("alice")).extracting(InMemoryApiKey::getLabel)
 			.doesNotContain("Minted with a key");
 	}
 

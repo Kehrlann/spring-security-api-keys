@@ -39,6 +39,12 @@ public interface ApiKey extends CredentialsContainer {
 	 */
 	@Nullable String getSecret();
 
+	/**
+	 * The authorities assigned to the key. If this key is linked to a principal whose
+	 * authorities can evolve, for example a {@code UserDetails}, they MUST be compared to
+	 * the principal's authorities. This ensures the key does not carry revoked
+	 * authorities.
+	 */
 	Collection<? extends GrantedAuthority> getAuthorities();
 
 	/**

@@ -28,7 +28,9 @@ curl -i localhost:8080/api/me                                                   
 
 ## How it works
 
-`UserApiKeyRepository` is a custom `ApiKeyRepository` that stores hashed keys in memory, each with an owner and a label. Generated keys look like `api<n>.<secret>`, where `<n>` is an incrementing number (`api1`, `api2`, …) that skips seeded ids. It loads the owner on every lookup:
+Keys are plain `InMemoryApiKey`s, stored hashed in an `InMemoryApiKeyRepository`, each with an owner and a label. Generated keys look like `api<n>.<secret>`, where `<n>` is an incrementing number (`api1`, `api2`, …) that skips seeded ids.
+
+`UserApiKeyRepository` wraps that repository and the `UserDetailsService`. It is the `ApiKeyRepository` used for authentication, and also lists keys for the management page. It loads the owner on every lookup:
 
 - the authenticated name is the owner's username;
 - a key grants the roles it was created with, minus those its owner no longer has;

@@ -74,19 +74,15 @@ public class InMemoryApiKeyRepository<T extends ApiKey> implements ApiKeyReposit
 		return this.detailsFactory.create(keyId, stored.hash(), stored.name(), stored.label(), stored.authorities());
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * The label of the generated key is its id.
-	 */
 	@Override
-	public GeneratedApiKey generate(String principalName, Collection<? extends GrantedAuthority> authorities) {
+	public GeneratedApiKey generate(String principalName, String label,
+			Collection<? extends GrantedAuthority> authorities) {
 		String secret = ApiKeySecrets.generate();
 		String hash = this.passwordEncoder.encode(secret);
 		List<GrantedAuthority> authorityList = List.copyOf(authorities);
 		while (true) {
 			String id = "api" + this.sequence.incrementAndGet();
-			if (this.keys.putIfAbsent(id, new StoredKey(hash, principalName, id, authorityList)) == null) {
+			if (this.keys.putIfAbsent(id, new StoredKey(hash, principalName, label, authorityList)) == null) {
 				return new GeneratedApiKey(id, secret);
 			}
 		}
