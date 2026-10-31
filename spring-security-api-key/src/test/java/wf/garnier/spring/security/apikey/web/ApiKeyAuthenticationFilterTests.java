@@ -38,8 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 class ApiKeyAuthenticationFilterTests {
 
-	InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(
-			InMemoryApiKey::new);
+	InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(InMemoryApiKey::new);
 
 	AuthenticationManager manager = new ProviderManager(new ApiKeyAuthenticationProvider(this.repository));
 

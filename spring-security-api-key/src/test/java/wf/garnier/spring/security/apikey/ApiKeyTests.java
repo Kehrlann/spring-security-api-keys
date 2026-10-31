@@ -145,8 +145,7 @@ class ApiKeyTests {
 
 		@Bean
 		InMemoryApiKeyRepository<InMemoryApiKey> repository() {
-			InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(
-					InMemoryApiKey::new);
+			InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(InMemoryApiKey::new);
 			repository.addApiKey("seeded", "seeded-secret_123", "Seeded Key",
 					List.of(new SimpleGrantedAuthority("ROLE_READER")));
 			return repository;

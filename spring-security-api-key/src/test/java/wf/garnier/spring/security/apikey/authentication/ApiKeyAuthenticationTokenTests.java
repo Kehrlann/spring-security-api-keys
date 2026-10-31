@@ -38,8 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 class ApiKeyAuthenticationTokenTests {
 
 	InMemoryApiKey details() {
-		InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(
-				 InMemoryApiKey::new);
+		InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(InMemoryApiKey::new);
 		repository.addApiKey("id", "secret", "Display Name", List.of(new SimpleGrantedAuthority("A")));
 		InMemoryApiKey details = repository.findByKeyId("id");
 		assertThat(details).isNotNull();

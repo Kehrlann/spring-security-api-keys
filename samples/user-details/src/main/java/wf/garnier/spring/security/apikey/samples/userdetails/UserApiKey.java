@@ -46,7 +46,7 @@ public final class UserApiKey implements ApiKey {
 	private final Instant createdAt;
 
 	UserApiKey(String id, @Nullable String secret, String username, String label,
-			   Collection<? extends GrantedAuthority> authorities, Instant createdAt) {
+			Collection<? extends GrantedAuthority> authorities, Instant createdAt) {
 		this.id = id;
 		this.secret = secret;
 		this.username = username;

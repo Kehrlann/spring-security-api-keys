@@ -71,30 +71,45 @@ public class InMemoryApiKeyRepository<T extends ApiKey> implements ApiKeyReposit
 		if (stored == null) {
 			return null;
 		}
-		return this.detailsFactory.create(keyId, stored.hash(), stored.name(), stored.authorities());
+		return this.detailsFactory.create(keyId, stored.hash(), stored.name(), stored.label(), stored.authorities());
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * The label of the generated key is its id.
+	 */
 	@Override
 	public GeneratedApiKey generate(String principalName, Collection<? extends GrantedAuthority> authorities) {
 		String secret = ApiKeySecrets.generate();
-		StoredKey stored = new StoredKey(this.passwordEncoder.encode(secret), principalName, List.copyOf(authorities));
+		String hash = this.passwordEncoder.encode(secret);
+		List<GrantedAuthority> authorityList = List.copyOf(authorities);
 		while (true) {
 			String id = "api" + this.sequence.incrementAndGet();
-			if (this.keys.putIfAbsent(id, stored) == null) {
+			if (this.keys.putIfAbsent(id, new StoredKey(hash, principalName, id, authorityList)) == null) {
 				return new GeneratedApiKey(id, secret);
 			}
 		}
 	}
 
 	/**
-	 * Add a key with a known id and secret. Intended for tests, demos and local
-	 * development only.
+	 * Add a key with a known id and secret, labelled with its id. Intended for tests,
+	 * demos and local development only.
 	 */
 	public void addApiKey(String id, String rawSecret, String name,
 			Collection<? extends GrantedAuthority> authorities) {
+		addApiKey(id, rawSecret, name, id, authorities);
+	}
+
+	/**
+	 * Add a key with a known id, secret and label. Intended for tests, demos and local
+	 * development only.
+	 */
+	public void addApiKey(String id, String rawSecret, String name, String label,
+			Collection<? extends GrantedAuthority> authorities) {
 		Assert.isTrue(VALID.matcher(id).matches(), "id must match [A-Za-z0-9_-]+");
 		Assert.isTrue(VALID.matcher(rawSecret).matches(), "secret must match [A-Za-z0-9_-]+");
-		StoredKey stored = new StoredKey(this.passwordEncoder.encode(rawSecret), name, List.copyOf(authorities));
+		StoredKey stored = new StoredKey(this.passwordEncoder.encode(rawSecret), name, label, List.copyOf(authorities));
 		if (this.keys.putIfAbsent(id, stored) != null) {
 			throw new IllegalArgumentException("An API key with id '" + id + "' already exists");
 		}
@@ -124,7 +139,8 @@ public class InMemoryApiKeyRepository<T extends ApiKey> implements ApiKeyReposit
 
 	private T toErasedDetails(Map.Entry<String, StoredKey> entry) {
 		StoredKey stored = entry.getValue();
-		T details = this.detailsFactory.create(entry.getKey(), stored.hash(), stored.name(), stored.authorities());
+		T details = this.detailsFactory.create(entry.getKey(), stored.hash(), stored.name(), stored.label(),
+				stored.authorities());
 		details.eraseCredentials();
 		return details;
 	}
@@ -147,13 +163,14 @@ public class InMemoryApiKeyRepository<T extends ApiKey> implements ApiKeyReposit
 		 * @param id the key id
 		 * @param secret the encoded secret
 		 * @param name the key name
+		 * @param label the human-readable label of the key
 		 * @param authorities the authorities granted by the key
 		 */
-		T create(String id, String secret, String name, List<GrantedAuthority> authorities);
+		T create(String id, String secret, String name, String label, List<GrantedAuthority> authorities);
 
 	}
 
-	private record StoredKey(String hash, String name, List<GrantedAuthority> authorities) {
+	private record StoredKey(String hash, String name, String label, List<GrantedAuthority> authorities) {
 	}
 
 }

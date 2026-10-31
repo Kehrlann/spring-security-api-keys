@@ -27,9 +27,8 @@ import wf.garnier.spring.security.apikey.ApiKey;
 import org.springframework.security.core.GrantedAuthority;
 
 /**
- * A simple {@link ApiKey}, usable as a
- * {@link InMemoryApiKeyRepository.DetailsFactory} with
- * {@code InMemoryApiKey::new}.
+ * A simple {@link ApiKey}, usable as a {@link InMemoryApiKeyRepository.DetailsFactory}
+ * with {@code InMemoryApiKey::new}.
  *
  * @author Daniel Garnier-Moiroux
  */
@@ -42,15 +41,18 @@ public final class InMemoryApiKey implements ApiKey, Serializable {
 
 	private final String name;
 
+	private final String label;
+
 	private final List<GrantedAuthority> authorities;
 
 	private @Nullable String secret;
 
-	public InMemoryApiKey(String id, String secret, String name,
-						  Collection<? extends GrantedAuthority> authorities) {
+	public InMemoryApiKey(String id, String secret, String name, String label,
+			Collection<? extends GrantedAuthority> authorities) {
 		this.id = id;
 		this.secret = secret;
 		this.name = name;
+		this.label = label;
 		this.authorities = List.copyOf(authorities);
 	}
 
@@ -70,6 +72,11 @@ public final class InMemoryApiKey implements ApiKey, Serializable {
 	}
 
 	@Override
+	public String getLabel() {
+		return this.label;
+	}
+
+	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		return this.authorities;
 	}
@@ -81,7 +88,7 @@ public final class InMemoryApiKey implements ApiKey, Serializable {
 
 	@Override
 	public String toString() {
-		return "InMemoryApiKeyDetails [id=" + this.id + ", name=" + this.name + "]";
+		return "InMemoryApiKey [id=" + this.id + ", name=" + this.name + ", label=" + this.label + "]";
 	}
 
 }

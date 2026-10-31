@@ -48,7 +48,7 @@ Only the secret is hashed, never the full key. The default encoder is a `Delegat
 
 Verification (configurer) and generation (repository) use separate encoders sharing one default. If you plug in a fully custom encoder, set it on both.
 
-`InMemoryApiKeyRepository<T>` is for demos, tests and local development. It takes a `DetailsFactory<T>` that builds your details type from the stored data, e.g. `new InMemoryApiKeyRepository<>(InMemoryApiKeyDetails::new)`. `addApiKey(id, rawSecret, name, authorities)` seeds a known key.
+`InMemoryApiKeyRepository<T>` is for demos, tests and local development. It takes a `DetailsFactory<T>` that builds your details type from the stored data, e.g. `new InMemoryApiKeyRepository<>(InMemoryApiKey::new)`. `addApiKey(id, rawSecret, name, label, authorities)` seeds a known key; `addApiKey(id, rawSecret, name, authorities)` and `generate` use the key id as the label.
 
 ## Custom repository
 

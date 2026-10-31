@@ -65,7 +65,7 @@ public class ApiKeyAuthenticationToken extends AbstractAuthenticationToken {
 	}
 
 	public static ApiKeyAuthenticationToken authenticated(ApiKey details,
-														  Collection<? extends GrantedAuthority> authorities) {
+			Collection<? extends GrantedAuthority> authorities) {
 		return new ApiKeyAuthenticationToken(details, null, authorities, true);
 	}
 

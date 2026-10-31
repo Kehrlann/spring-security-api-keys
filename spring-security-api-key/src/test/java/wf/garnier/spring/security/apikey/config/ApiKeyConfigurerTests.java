@@ -119,8 +119,7 @@ class ApiKeyConfigurerTests {
 		}
 
 		@GetMapping("/principal")
-		String principal(
-				@org.springframework.security.core.annotation.AuthenticationPrincipal InMemoryApiKey details) {
+		String principal(@org.springframework.security.core.annotation.AuthenticationPrincipal InMemoryApiKey details) {
 			return details.getId() + "|" + details.getSecret();
 		}
 

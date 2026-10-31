@@ -39,8 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ApiKeyAuthenticationProviderTests {
 
-	InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(
-			InMemoryApiKey::new);
+	InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(InMemoryApiKey::new);
 
 	List<String> encoderCalls = new ArrayList<>();
 

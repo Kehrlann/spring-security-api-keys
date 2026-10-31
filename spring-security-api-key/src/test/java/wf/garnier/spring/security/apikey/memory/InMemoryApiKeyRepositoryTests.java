@@ -34,8 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 
 class InMemoryApiKeyRepositoryTests {
 
-	InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(
-			InMemoryApiKey::new);
+	InMemoryApiKeyRepository<InMemoryApiKey> repository = new InMemoryApiKeyRepository<>(InMemoryApiKey::new);
 
 	@Test
 	void generatesSequentialIds() {
@@ -91,6 +90,24 @@ class InMemoryApiKeyRepositoryTests {
 	}
 
 	@Test
+	void seedingWithLabelStoresLabel() {
+		this.repository.addApiKey("a", "secret", "n", "CI pipeline", List.of());
+		InMemoryApiKey details = this.repository.findByKeyId("a");
+		assertThat(details).isNotNull();
+		assertThat(details.getLabel()).isEqualTo("CI pipeline");
+		assertThat(this.repository.listKeys()).extracting(InMemoryApiKey::getLabel).containsExactly("CI pipeline");
+	}
+
+	@Test
+	void labelDefaultsToId() {
+		this.repository.addApiKey("a", "secret", "n", List.of());
+		GeneratedApiKey generated = this.repository.generate("g", List.of());
+		assertThat(this.repository.findByKeyId("a")).extracting(InMemoryApiKey::getLabel).isEqualTo("a");
+		assertThat(this.repository.findByKeyId(generated.id())).extracting(InMemoryApiKey::getLabel)
+			.isEqualTo(generated.id());
+	}
+
+	@Test
 	void unknownIdIsNull() {
 		assertThat(this.repository.findByKeyId("nope")).isNull();
 	}
@@ -114,8 +131,7 @@ class InMemoryApiKeyRepositoryTests {
 		List<InMemoryApiKey> keys = this.repository.listKeys();
 
 		assertThat(keys).extracting(InMemoryApiKey::getId).containsExactlyInAnyOrder("a", generated.id());
-		assertThat(keys).extracting(InMemoryApiKey::getPrincipalName)
-			.containsExactlyInAnyOrder("seeded", "generated");
+		assertThat(keys).extracting(InMemoryApiKey::getPrincipalName).containsExactlyInAnyOrder("seeded", "generated");
 		assertThat(keys).extracting(InMemoryApiKey::getSecret).containsOnlyNulls();
 		InMemoryApiKey found = this.repository.findByKeyId("a");
 		assertThat(found).isNotNull();
@@ -161,8 +177,7 @@ class InMemoryApiKeyRepositoryTests {
 				return ("custom:" + raw).equals(encoded);
 			}
 		};
-		InMemoryApiKeyRepository<InMemoryApiKey> custom = new InMemoryApiKeyRepository<>(
-				InMemoryApiKey::new, encoder);
+		InMemoryApiKeyRepository<InMemoryApiKey> custom = new InMemoryApiKeyRepository<>(InMemoryApiKey::new, encoder);
 		custom.addApiKey("a", "secret", "n", List.of());
 		InMemoryApiKey seeded = custom.findByKeyId("a");
 		assertThat(seeded).isNotNull();
@@ -176,13 +191,14 @@ class InMemoryApiKeyRepositoryTests {
 	@Test
 	void usesDetailsFactory() {
 		InMemoryApiKeyRepository<TaggedApiKey> tagged = new InMemoryApiKeyRepository<>(
-				(id, secret, name, authorities) -> new TaggedApiKey(
-						new InMemoryApiKey(id, secret, name, authorities), "tag-" + id));
-		tagged.addApiKey("a", "secret", "n", List.of(new SimpleGrantedAuthority("X")));
+				(id, secret, name, label, authorities) -> new TaggedApiKey(
+						new InMemoryApiKey(id, secret, name, label, authorities), "tag-" + id));
+		tagged.addApiKey("a", "secret", "n", "My key", List.of(new SimpleGrantedAuthority("X")));
 		TaggedApiKey details = tagged.findByKeyId("a");
 		assertThat(details).isNotNull();
 		assertThat(details.tag()).isEqualTo("tag-a");
 		assertThat(details.getPrincipalName()).isEqualTo("n");
+		assertThat(details.delegate().getLabel()).isEqualTo("My key");
 		assertThat(details.getSecret()).startsWith("{sha256}");
 		assertThat(details.getAuthorities()).extracting("authority").containsExactly("X");
 	}
