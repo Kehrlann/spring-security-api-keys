@@ -94,7 +94,7 @@ All the pieces are public: the token, the provider, the converter, the filter an
 
 30. As an application developer, I want the authenticated principal to be my own `ApiKeyDetails` implementation, so that I can use `@AuthenticationPrincipal` with my rich type.
 31. As an application developer, I want the authenticated token's authorities to come from `ApiKeyDetails#getAuthorities()`, so that I can scope keys.
-32. As an application developer, I want `Authentication#getName()` to return `ApiKeyDetails#getName()`, which defaults to the key id, so that personal access tokens can report the owning user's name.
+32. As an application developer, I want `Authentication#getName()` to return `ApiKeyDetails#getPrincipalName()`, which defaults to the key id, so that personal access tokens can report the owning user's name.
 33. As an application developer, I want every successful API key authentication to carry a `FACTOR_API_KEY` factor authority, exposed as a public constant, so that I can write rules such as "authenticated by API key".
 34. As an application developer using `@EnableMultiFactorAuthentication`, I want an API key authentication to merge with an existing authentication that has the same name, so that a user can combine factors such as password plus API key.
 35. As a security reviewer, I want the raw secret and the stored hash erased from the `Authentication` after it succeeds, so that credentials don't linger in memory or end up serialized.
@@ -114,7 +114,7 @@ All the pieces are public: the token, the provider, the converter, the filter an
 43. As an application developer, I want `findByKeyId` to return `null` for an unknown key id, so that I get `UserDetailsService`-like ergonomics without exceptions.
 44. As an application developer, I want the repository Javadoc to state that `findByKeyId` must return a fresh instance on each call, so that credential erasure never corrupts stored data.
 45. As an application developer, I want the repository Javadoc to state that implementations must hash the secret before storing it, and to point me to the library's secret generator, so that my implementation is safe by default.
-46. As an application developer, I want `ApiKeyDetails` to stay minimal (id, hashed secret, authorities, name; no expiry or enabled flags), and to return `null` for expired or revoked keys, so that I don't implement methods I don't need.
+46. As an application developer, I want `ApiKeyDetails` to stay minimal (id, hashed secret, authorities, principal name, label; no expiry or enabled flags), and to return `null` for expired or revoked keys, so that I don't implement methods I don't need.
 
 ### Key generation
 
@@ -149,7 +149,7 @@ All the pieces are public: the token, the provider, the converter, the filter an
 - Single-module Maven build. Apache 2.0 licence. GitHub Actions CI on JDK 17. The README is the documentation.
 - Coordinates: `wf.garnier:spring-security-api-key`. No Spring Boot starter.
 - Root package `wf.garnier.spring.security.apikey`, with these sub-packages:
-  - root: `ApiKey`, `ApiKeyDetails`, `ApiKeyRepository`, `GeneratedApiKey`, the secret generator helper and the default encoder factory.
+  - root: `ApiKeyDetails`, `ApiKeyRepository`, `GeneratedApiKey`, the secret generator helper and the default encoder factory.
   - `authentication`: `ApiKeyAuthenticationProvider` and `ApiKeyAuthenticationToken`.
   - `web`: `ApiKeyAuthenticationConverter` and `ApiKeyAuthenticationFilter`.
   - `memory`: `InMemoryApiKeyRepository` and its details type.
@@ -159,8 +159,13 @@ All the pieces are public: the token, the provider, the converter, the filter an
 
 ### Domain types
 
-- **`ApiKey`** is the *stored* view of a key only: `getId()` and `getSecret()`, where the secret is the encoded hash. It is nullable after erasure. It is never used for the incoming raw secret.
-- **`ApiKeyDetails`** extends `ApiKey` and `CredentialsContainer`. It adds `getAuthorities()` and `getName()`, the latter defaulting to `getId()`.
+- **`ApiKeyDetails`** is the *stored* view of a key. It extends `CredentialsContainer` and declares:
+  - `getId()`;
+  - `@Nullable getSecret()`: the encoded hash, `null` after erasure. It is never used for the incoming raw secret;
+  - `getAuthorities()`;
+  - `getPrincipalName()`, defaulting to `getId()`;
+  - `getLabel()`, a human-readable label for the key, defaulting to `getId()`.
+  - There is no separate credential-only `ApiKey` supertype: nothing consumes the id and hash without the rest.
   - It has no status methods (expiry, enabled).
   - It has no `copy()` method, unlike mcp-security's `ApiKeyEntity`.
   - Renamed from mcp-security's `ApiKeyEntity`.
@@ -170,7 +175,7 @@ All the pieces are public: the token, the provider, the converter, the filter an
   - `void delete(String keyId)`: deleting an unknown id is a no-op.
   - There is no abstract base class: generation details are specific to each implementation. The Javadoc states the contract: hash before storing, return fresh instances, ids must match `[A-Za-z0-9_-]+`, and use the secret helper.
   - Renamed from mcp-security's `ApiKeyEntityRepository`.
-- **`GeneratedApiKey`** exposes `getId()`, `getRawSecret()` and `getUserFacingApiKey()`, which returns `id + "." + rawSecret`. Its `toString()` redacts the secret. It does *not* implement `ApiKey`.
+- **`GeneratedApiKey`** exposes `getId()`, `getRawSecret()` and `getUserFacingApiKey()`, which returns `id + "." + rawSecret`. Its `toString()` redacts the secret. It does *not* implement `ApiKeyDetails`.
 - **The secret generator helper** is a public utility, for example `ApiKeySecrets.generate()`. It produces 32 bytes from `SecureRandom`, encoded as unpadded base64url (43 characters).
 - **The default encoder factory** returns a `DelegatingPasswordEncoder`:
   - It encodes with id `{sha256}`.
@@ -184,7 +189,7 @@ All the pieces are public: the token, the provider, the converter, the filter an
 - **Unauthenticated state:** holds the key id and the raw secret presented by the client.
 - **Authenticated state:** the principal is the `ApiKeyDetails`, the authorities come from it (plus the factor authority), and the credentials are erased.
 - Both states are created through static factories: `unauthenticated(...)` and `authenticated(...)`.
-- `getName()` returns the key id while unauthenticated, and `ApiKeyDetails#getName()` once authenticated.
+- `getName()` returns the key id while unauthenticated, and `ApiKeyDetails#getPrincipalName()` once authenticated.
 - The token class declares its own `toBuilder()`. Spring Security 7's multi-factor merge checks for that method on the concrete class itself; the interface default doesn't count.
 - `eraseCredentials()` clears the raw secret and calls through to the principal.
 
@@ -338,7 +343,7 @@ Every public class gets its own unit test, testing its contract in isolation:
   - rejecting wrong secrets.
 - **Secret generator helper:** length, charset (unpadded base64url) and uniqueness across calls.
 - **`GeneratedApiKey`:** user-facing format and redacted `toString()`.
-- **`ApiKeyDetails` default methods:** `getName()` defaults to the id.
+- **`ApiKeyDetails` default methods:** `getPrincipalName()` and `getLabel()` default to the id.
 - **`ApiKeyAuthenticationToken`:**
   - both factory states;
   - `getName()` in each state;

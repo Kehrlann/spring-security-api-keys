@@ -18,6 +18,8 @@ package wf.garnier.spring.security.apikey;
 
 import java.util.Collection;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.security.core.CredentialsContainer;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -27,7 +29,15 @@ import org.springframework.security.core.GrantedAuthority;
  *
  * @author Daniel Garnier-Moiroux
  */
-public interface ApiKeyDetails extends ApiKey, CredentialsContainer {
+public interface ApiKeyDetails extends CredentialsContainer {
+
+	String getId();
+
+	/**
+	 * The encoded hash of the secret, never the raw secret presented by a client.
+	 * {@code null} once credentials have been erased.
+	 */
+	@Nullable String getSecret();
 
 	Collection<? extends GrantedAuthority> getAuthorities();
 
@@ -35,6 +45,14 @@ public interface ApiKeyDetails extends ApiKey, CredentialsContainer {
 	 * The name of the authenticated principal. Defaults to the key id.
 	 */
 	default String getPrincipalName() {
+		return getId();
+	}
+
+	/**
+	 * A human-readable label for the key, for example to list a user's keys. Defaults to
+	 * the key id.
+	 */
+	default String getLabel() {
 		return getId();
 	}
 

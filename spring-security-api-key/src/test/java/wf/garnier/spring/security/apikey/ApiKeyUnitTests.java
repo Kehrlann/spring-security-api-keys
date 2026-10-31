@@ -71,7 +71,7 @@ class ApiKeyUnitTests {
 	}
 
 	@Test
-	void detailsNameDefaultsToId() {
+	void detailsNameAndLabelDefaultToId() {
 		ApiKeyDetails details = new ApiKeyDetails() {
 			public String getId() {
 				return "abc";
@@ -89,6 +89,7 @@ class ApiKeyUnitTests {
 			}
 		};
 		assertThat(details.getPrincipalName()).isEqualTo("abc");
+		assertThat(details.getLabel()).isEqualTo("abc");
 	}
 
 }

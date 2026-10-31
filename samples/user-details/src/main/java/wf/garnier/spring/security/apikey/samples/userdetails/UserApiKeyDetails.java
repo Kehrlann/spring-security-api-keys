@@ -75,6 +75,7 @@ public final class UserApiKeyDetails implements ApiKeyDetails {
 		return this.authorities;
 	}
 
+	@Override
 	public String getLabel() {
 		return this.label;
 	}
